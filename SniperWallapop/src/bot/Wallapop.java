@@ -11,7 +11,6 @@ import javax.mail.MessagingException;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
@@ -28,28 +27,43 @@ import org.openqa.selenium.chrome.ChromeOptions;
 public class Wallapop {
 	private WebDriver driver;
 	private String [] urls, graficas = { 
-			"3070", "3060 ti", "3060" , "6700 xt"
+			"3070", "3060ti", "3060" , "6700xt"
 	};
 	private List<String> anunciosGuardados = new ArrayList<String>();
+	private static Session session;
+	private String remitente, password, destinatario;
 	
-	private boolean stop;
 
-	public Wallapop(boolean hide, String[] urls) throws InterruptedException {
+	public Wallapop(boolean hide, String[] urls, String remitente, String password, String destinatario) throws InterruptedException {
 		this.urls = urls;
 		if(hide) {
 			ChromeOptions options = new ChromeOptions();
 			options.addArguments("--headless");
-			options.addArguments("--mute-audio");
-			options.addArguments("--no-sandbox");
+			options.addArguments("start-maximized");
+
 			driver = new ChromeDriver(options);
 		}else {
 			driver = new ChromeDriver();
 		}	
-		stop = false;
 		System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
 		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 		
+		this.remitente = remitente;
+		this.password = password;
 		
+		Properties properties = new Properties(); // properties object contains host information
+		
+		String host = "smtp.gmail.com";
+		properties.put("mail.smtp.host", host);
+		properties.put("mail.smtp.port", "465");
+		properties.put("mail.smtp.ssl.enable", "true");
+		properties.put("mail.smtp.auth", "true");
+
+		session = Session.getInstance(properties, new javax.mail.Authenticator(){
+			protected PasswordAuthentication getPasswordAuthentication() {
+				return new PasswordAuthentication(remitente, password);
+			}
+		});
 	}
 	
 	public void preSniping() {
@@ -98,8 +112,8 @@ public class Wallapop {
 						WebElement anuncio = driver.findElement(By.xpath("/html/body/tsl-root/tsl-public/div/div/tsl-search/div/tsl-search-layout/div/div[2]/div/tsl-public-item-card-list/div/a["+j+"]"));
 						String titulo = anuncio.getAttribute("title") , url;
 						
-						anuncio.click();
-						
+						JavascriptExecutor js = (JavascriptExecutor)driver;
+						js.executeScript("arguments[0].click()", anuncio);
 
 						ArrayList<String> tabs2 = new ArrayList<String> (driver.getWindowHandles());
 					    driver.switchTo().window(tabs2.get(1));
@@ -107,13 +121,19 @@ public class Wallapop {
 					    driver.close();
 					    driver.switchTo().window(tabs2.get(0));
 							
-						System.out.println(titulo);
+					    System.out.println(titulo);
 						
-						if(titulo.contains(graficas[i]) && !anunciosGuardados.contains(url)) {
-							System.out.println("**** Nuevo anuncio  ----  Enviando mail");
-							anunciosGuardados.add(url);
-							Wallapop.sendMail("cocaballosgang@gmail.com", graficas[i], url, "ingenieriaweb2021@gmail.com", "davigjwawfbsrkvk");
+						titulo = titulo.replace(" ", "").toLowerCase();
+						
+						for (String g : graficas) {
+							if(titulo.contains(g) && !anunciosGuardados.contains(url)) {
+								System.out.println("**** Nuevo anuncio  ----  Enviando mail");
+								anunciosGuardados.add(url);
+								Wallapop.sendMail(destinatario, graficas[i], url, remitente);
+							}
 						}
+						
+						
 					}catch(Exception e) {
 						e.printStackTrace();
 					}
@@ -124,21 +144,8 @@ public class Wallapop {
 
 	}
 	
-	public static void sendMail(String destinatario, String asunto, String cuerpo, String remitente, String password) throws AddressException, MessagingException {
-		Properties properties = new Properties(); // properties object contains host information
+	public static void sendMail(String destinatario, String asunto, String cuerpo, String remitente) {
 		
-		String host = "smtp.gmail.com";
-		properties.put("mail.smtp.host", host);
-		properties.put("mail.smtp.port", "465");
-		properties.put("mail.smtp.ssl.enable", "true");
-		properties.put("mail.smtp.auth", "true");
-
-		Session session = Session.getInstance(properties, new javax.mail.Authenticator(){
-			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(remitente, password);
-			}
-		});
-
 		try {
 			MimeMessage message = new MimeMessage(session);
 			message.setFrom(new InternetAddress(remitente));
@@ -163,7 +170,7 @@ public class Wallapop {
 		};
 
 		try {
-			Wallapop w = new Wallapop(false, urls);
+			Wallapop w = new Wallapop(true, urls, "ingenieriaweb2021@gmail.com", "davigjwawfbsrkvk", "cocaballosgang@gmail.com");
 			w.sniping();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -183,12 +190,12 @@ public class Wallapop {
 			this.cuerpo = cuerpo;
 		}
 		public void run() {
-			try {
-				Wallapop.sendMail(dest, asunto, cuerpo, "ingenieriaweb2021@gmail.com", "davigjwawfbsrkvk");
+			/*try {
+				Wallapop.sendMail(dest, asunto, cuerpo, "", "");
 			} catch (MessagingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+			}*/
 		}
 	}
 
