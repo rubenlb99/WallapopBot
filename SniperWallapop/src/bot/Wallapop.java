@@ -65,38 +65,7 @@ public class Wallapop {
 			}
 		});
 	}
-	
-	public void preSniping() {
-		
-				
-		for (int i = 0; i < urls.length; i++) {
-			driver.navigate().to(urls[i]);
-			
-			for (int j = 1; j <= 6; j++) {
-				try {													
-					WebElement anuncio = driver.findElement(By.xpath("/html/body/tsl-root/tsl-public/div/div/tsl-search/div/tsl-search-layout/div/div[2]/div/tsl-public-item-card-list/div/a["+j+"]"));
-					String titulo = anuncio.getAttribute("title") , url;
-					
-					anuncio.click();
-					url = driver.getCurrentUrl();
 
-					ArrayList<String> tabs2 = new ArrayList<String> (driver.getWindowHandles());
-				    driver.switchTo().window(tabs2.get(1));
-				    driver.close();
-				    driver.switchTo().window(tabs2.get(0));
-						
-					System.out.println(titulo);
-					
-					if(titulo.contains(graficas[i]) && !anunciosGuardados.contains(url)) {
-						anunciosGuardados.add(url);
-					}
-				}catch(Exception e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	
 	public void sniping() {
 		
 		driver.navigate().to("https://es.wallapop.com/");
